@@ -1,4 +1,4 @@
-const { Events, MessageFlags, Collection } = require('discord.js');
+const { Events, MessageFlags, Collection, EmbedBuilder } = require('discord.js');
 
 module.exports = {
 	name: Events.InteractionCreate,
@@ -48,10 +48,13 @@ module.exports = {
 		}
 		else if (interaction.isButton()) {
 			if (interaction.customId === 'rsvp_yes') {
-				// await handleRsvpButton(interaction);
+				await handleRsvpButton(interaction);
 			}
-			else if (interaction.customId === 'cancel') {
-				// await handleCancelButton(interaction);
+			else if (interaction.customId === 'debug') {
+				await debugButton(interaction);
+			}
+			else if (interaction.customId === 'cancel_event_button') {
+				await handleCancelButton(interaction);
 			}
 		}
 		else if (interaction.isStringSelectMenu()) {
@@ -59,3 +62,56 @@ module.exports = {
 		}
 	},
 };
+
+// RSVP button handler
+async function handleRsvpButton(interaction) {
+	await interaction.deferUpdate();
+	const embed = interaction.message.embeds[0];
+	const updatedEmbed = EmbedBuilder.from(embed);
+
+	const attendeesField = updatedEmbed.data.fields.find(field => field.name.startsWith('Attendees'));
+	let attendees = attendeesField.value === 'No one yet.' ? [] : attendeesField.value.split('\n');
+	const userMention = `<@${interaction.user.id}>`;
+
+	if (attendees.includes(userMention)) {
+		// remove the user from the attendees list
+		attendees = attendees.filter(attendee => attendee !== userMention);
+		await interaction.followUp({ content: 'You have been removed from the RSVP list.', ephemeral: true });
+	}
+	else {
+		// Add the user to the attendees list
+		attendees.push(userMention);
+		await interaction.followUp({ content: 'You have RSVP\'d to the event.', ephemeral: true });
+	}
+
+	// Update the embed with the new attendees list
+	if (attendees.length === 0) {
+		attendeesField.value = 'No one yet.';
+	}
+	else {
+		attendeesField.value = attendees.join('\n');
+	}
+	attendeesField.name = `Attendees (${attendees.length})`;
+
+	await interaction.message.edit({ embeds: [updatedEmbed] });
+}
+
+async function debugButton(interaction) {
+	await interaction.deferUpdate();
+	const embed = interaction.message.embeds[0];
+	const attendeesField = embed.data.fields.find(field => field.name.startsWith('Attendees'));
+
+	await interaction.followUp({
+		content: `Debug Info:\nEmbed Title: ${embed.title}\nAttendees Field: ${attendeesField.name}\nAttendees Count: ${attendeesField.value.split('\n').length}\n Attendees List: ${attendeesField.value}\n Datetime: ${embed.datetime}`,
+		ephemeral: true,
+	});
+}
+
+async function handleCancelButton(interaction) {
+	const embed = interaction.message.embeds[0];
+	const timeField = embed.fields.find(field => field.name === 'Time');
+	await interaction.deferUpdate();
+	// delete the event message
+	await interaction.message.delete();
+	await interaction.followUp({ content: `'${embed.title}' on '${timeField.value} has been cancelled.`, ephemeral: true });
+}

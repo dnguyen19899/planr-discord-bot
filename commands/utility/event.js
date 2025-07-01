@@ -37,7 +37,7 @@ module.exports = {
 		const unixTimestamp = Math.floor(eventDate.getTime() / 1000);
 
 		const embed = new EmbedBuilder()
-			.setColor(0x0099FF) // Blue
+			.setColor(0x800080) // Purple
 			.setTitle(`📅 ${title}`)
 			.addFields(
 				{ name: 'Time', value: `<t:${unixTimestamp}:F> (<t:${unixTimestamp}:R>)`, inline: false },
@@ -52,13 +52,17 @@ module.exports = {
 		const row = new ActionRowBuilder()
 			.addComponents(
 				new ButtonBuilder()
-					.setCustomId('rsvp_button')
-					.setLabel('✅ RSVP')
-					.setStyle(ButtonStyle.Success),
+					.setCustomId('rsvp_yes')
+					.setLabel('✅')
+					.setStyle(ButtonStyle.Secondary),
+				new ButtonBuilder()
+					.setCustomId('debug')
+					.setLabel('🪲')
+					.setStyle(ButtonStyle.Secondary),
 				new ButtonBuilder()
 					.setCustomId('cancel_event_button')
-					.setLabel('🗑️ Cancel Event')
-					.setStyle(ButtonStyle.Danger),
+					.setLabel('🗑️')
+					.setStyle(ButtonStyle.Secondary),
 			);
 		await interaction.reply({
 			embeds: [embed],
